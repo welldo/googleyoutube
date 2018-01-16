@@ -1,0 +1,48 @@
+upstream www.youtube.com {
+server 74.125.203.136:443;
+server 108.177.97.190:443;
+}
+server{
+listen 80;
+server_name youtube.owkc.xyz y.owkc.xyz;
+rewrite ^(.*) https://youtube.owkc.xyz/$1 permanent;
+}
+server{
+listen 443;
+server_name youtube.owkc.xyz y.owkc.xyz;
+ssl on;
+    ssl_certificate    /etc/letsencrypt/live/youtube.owkc.xyz/fullchain.pem;
+    ssl_certificate_key    /etc/letsencrypt/live/youtube.owkc.xyz/privkey.pem;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    error_page 497  https://$host$request_uri;
+
+
+location / {
+proxy_redirect off;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto https;
+proxy_pass https://www.youtube.com;
+}
+  #PROXY-END
+
+	include enable-php-71.conf;
+    #PHP-INFO-END
+    
+    #REWRITE-START URL重写规则引用,修改后将导致面板设置的伪静态规则失效
+    include /www/server/panel/vhost/rewrite/youtube.owkc.xyz.conf;
+    #REWRITE-END
+    
+    #禁止访问的文件或目录
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)
+    {
+        return 404;
+    }
+    
+    access_log  /www/wwwlogs/youtube.owkc.xyz.log;
+
+}
